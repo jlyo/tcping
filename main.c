@@ -29,7 +29,7 @@ void handler(int sig)
 int main(int argc, char *argv[])
 {
     char *hostname = NULL;
-    int portnr = 7;
+    char *portnr = "7";
     int c;
     int count = -1, curncount = 0;
     int wait = 1, quiet = 0;
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
         switch(c)
         {
             case 'p':
-                portnr = atoi(optarg);
+                portnr = optarg;
                 break;
 
             case 'c':
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     hostname = argv[optind];
 
     if (!quiet)
-        printf("PING %s:%d\n", hostname, portnr);
+        printf("PING %s:%s\n", hostname, portnr);
 
     signal(SIGINT, handler);
     signal(SIGTERM, handler);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
             min = min > ms ? ms : min;
             max = max < ms ? ms : max;
 
-            printf("response from %s:%d, seq=%d time=%.2f ms\n", hostname, portnr, curncount, (dend - dstart) * 1000.0);
+            printf("response from %s:%s, seq=%d time=%.2f ms\n", hostname, portnr, curncount, (dend - dstart) * 1000.0);
 
             break;
         }
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 
     if (!quiet)
     {
-        printf("--- %s:%d ping statistics ---\n", hostname, portnr);
+        printf("--- %s:%s ping statistics ---\n", hostname, portnr);
         printf("%d connects, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / ((double)count)) * 100.0);
         printf("round-trip min/avg/max = %.1f/%.1f/%.1f ms\n", min, avg / (double)ok, max);
     }

@@ -12,51 +12,49 @@
 
 #define incopy(a)       *((struct in_addr *)a)
 
-int connect_to(char *host, int portnr)
+int connect_to(char *host, char *portnr)
 {
-    int     fd;
-    int     loop;
-    struct sockaddr_in      addr;
-    struct hostent  *hostdnsentries;
+    int fd;
+    struct addrinfo hints;
+    struct addrinfo *resolved;
+    struct addrinfo *addr;
+    int errcode;
 
-    /* create socket */
-    fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd == -1)
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_NUMERICSERV;
+    hints.ai_protocol = 0;
+
+    if ((errcode = getaddrinfo(host, portnr, &hints, &resolved)) != 0)
     {
-        perror("problem creating socket ");
+        fprintf(stderr, "could not resolve %s:%s: %s\n", host, portnr, gai_strerror(errcode));
         exit(2);
     }
-
-    hostdnsentries = gethostbyname(host);
-    if (hostdnsentries == NULL)
-    {
-        fprintf(stderr, "could not resolve %s:%d: %s\n", host, portnr, strerror(errno));
-        close(fd);
-        exit(2);
-    }
-
-    /* initialize address structure */
-    memset((void *)&addr, 0, sizeof(addr));
-    addr.sin_port   = htons(portnr);
-    addr.sin_family = hostdnsentries -> h_addrtype;
 
     /* try to connect for each of the entries: */
-    for(loop=0; ; loop++)
+    addr = resolved;
+    while (addr != NULL)
     {
-        if ((hostdnsentries -> h_addr_list[loop]) == NULL)
-            break;
-
-        addr.sin_addr = incopy(hostdnsentries -> h_addr_list[loop]);
+        /* create socket */
+        fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+        if (fd == -1)
+        {
+            perror("problem creating socket ");
+            exit(2);
+        }
 
         /* connect to peer */
-        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) == 0)
+        if (connect(fd, addr->ai_addr, addr->ai_addrlen) == 0)
         {
             /* connection made, return */
+            freeaddrinfo(resolved);
             return fd;
         }
+        close(fd);
+        addr = addr->ai_next;
     }
 
-    close(fd);
-
+    freeaddrinfo(resolved);
     return -1;
 }

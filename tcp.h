@@ -1,1 +1,1 @@
-int connect_to(char *host, int portnr);
+int connect_to(char *host, char *portnr);
