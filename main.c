@@ -8,6 +8,8 @@
 
 #include "tcp.h"
 
+#define abs(x) ((x) < 0 ? -(x) : (x))
+
 static volatile int stop = 0;
 
 void usage(void)
@@ -121,7 +123,7 @@ int main(int argc, char *argv[])
     if (!quiet)
     {
         printf("--- %s:%s ping statistics ---\n", hostname, portnr);
-        printf("%d responses, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / ((double)count)) * 100.0);
+        printf("%d responses, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / abs(((double)count)) * 100.0));
         printf("round-trip min/avg/max = %.1f/%.1f/%.1f ms\n", min, avg / (double)ok, max);
     }
 
