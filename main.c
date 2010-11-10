@@ -13,7 +13,7 @@ static volatile int stop = 0;
 void usage(void)
 {
     fprintf(stderr, "tcping, (C) 2003 folkert@vanheusden.com\n\n");
-    fprintf(stderr, "-h hostname	hostname (e.g. localhost)\n");
+    fprintf(stderr, "hostname	hostname (e.g. localhost)\n");
     fprintf(stderr, "-p portnr	portnumber (e.g. 80)\n");
     fprintf(stderr, "-c count	how many times to connect\n");
     fprintf(stderr, "-i interval	delay between each connect\n");
@@ -40,10 +40,6 @@ int main(int argc, char *argv[])
     {
         switch(c)
         {
-            case 'h':
-                hostname = optarg;
-                break;
-
             case 'p':
                 portnr = atoi(optarg);
                 break;
@@ -71,12 +67,13 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (hostname == NULL)
+    if (optind >= argc)
     {
         fprintf(stderr, "No hostname given\n");
         usage();
         return 3;
     }
+    hostname = argv[optind];
 
     if (!quiet)
         printf("PING %s:%d\n", hostname, portnr);

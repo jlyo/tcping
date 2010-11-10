@@ -5,17 +5,17 @@ make install
 
 Usage:
 -----
-tcping -h hostname
+tcping hostname
 (uses port 80) or
-tcping -h hostname -p port
+tcping -p port hostname
 
 ping once:
-tcping -h host -p port -c 1
+tcping -p port -c 1 hostname
 
 Return code is 0 for could connect (at least once) and 127 when no connection at all could be made.
 
 
 examples:
-tcping -h 127.0.0.1 -p 8080
+tcping -p 8080 127.0.0.1
 
 Please support my opensource development: http://www.vanheusden.com/wishlist.php
