@@ -1,7 +1,7 @@
 CC=gcc
 
 LDFLAGS=
-CFLAGS=-O2 -Wall
+CFLAGS=-g -Wall -Wextra -pedantic
 
 VERSION=0.1
 
@@ -11,7 +11,6 @@ all: tcping
 
 tcping: $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o tcping
-	strip tcping
 
 install: tcping
 	cp tcping $(DESTDIR)/usr/bin
