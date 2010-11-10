@@ -16,7 +16,6 @@ Return code is 0 for could connect (at least once) and 127 when no connection at
 
 
 examples:
-tcping -g http://localhost/
 tcping -h 127.0.0.1 -p 8080
 
 Please support my opensource development: http://www.vanheusden.com/wishlist.php
