@@ -5,7 +5,7 @@ CFLAGS=-O2 -Wall
 
 VERSION=0.1
 
-OBJS=io.o error.o main.o tcp.o
+OBJS=main.o tcp.o
 
 all: tcping
 

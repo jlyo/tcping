@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#include "io.h"
 #include "tcp.h"
 
 static volatile int stop = 0;
