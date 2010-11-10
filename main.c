@@ -84,47 +84,23 @@ int main(int argc, char *argv[])
     while((curncount < count || count == -1) && stop == 0)
     {
         double ms;
-        double dstart, dend;
-        struct timeval start, end;
-        struct timezone tz;
-        int fd;
+        struct timeval rtt;
 
-        if (gettimeofday(&start, &tz) == -1)
+        if (connect_to(hostname, portnr, &rtt) == -1)
         {
-            perror("gettimeofday");
-            break;
+            printf("error connecting to host: %s\n", strerror(errno));
+            err++;
         }
-
-        for(;;)
+        else
         {
-            fd = connect_to(hostname, portnr);
-            if ((fd == -1) && (errno != ECONNREFUSED))
-            {
-                printf("error connecting to host: %s\n", strerror(errno));
-                err++;
-                break;
-            }
-
             ok++;
 
-            close(fd);
-
-            if (gettimeofday(&end, &tz) == -1)
-            {
-                perror("gettimeofday");
-                break;
-            }
-
-            dstart = (((double)start.tv_sec) + ((double)start.tv_usec)/1000000.0);
-            dend = (((double)end.tv_sec) + ((double)end.tv_usec)/1000000.0);
-            ms = (dend - dstart) * 1000.0;
+            ms = ((double)rtt.tv_sec * 1000.0) + ((double)rtt.tv_usec / 1000.0);
             avg += ms;
             min = min > ms ? ms : min;
             max = max < ms ? ms : max;
 
-            printf("response from %s:%s, seq=%d time=%.2f ms\n", hostname, portnr, curncount, (dend - dstart) * 1000.0);
-
-            break;
+            printf("response from %s:%s, seq=%d time=%.2f ms\n", hostname, portnr, curncount, ms);
         }
 
         curncount++;
@@ -136,7 +112,7 @@ int main(int argc, char *argv[])
     if (!quiet)
     {
         printf("--- %s:%s ping statistics ---\n", hostname, portnr);
-        printf("%d connects, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / ((double)count)) * 100.0);
+        printf("%d responses, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / ((double)count)) * 100.0);
         printf("round-trip min/avg/max = %.1f/%.1f/%.1f ms\n", min, avg / (double)ok, max);
     }
 
