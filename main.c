@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         for(;;)
         {
             fd = connect_to(hostname, portnr);
-            if (fd == -1)
+            if ((fd == -1) && (errno != ECONNREFUSED))
             {
                 printf("error connecting to host: %s\n", strerror(errno));
                 err++;
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
             min = min > ms ? ms : min;
             max = max < ms ? ms : max;
 
-            printf("connected to %s:%d, seq=%d time=%.2f ms\n", hostname, portnr, curncount, (dend - dstart) * 1000.0);
+            printf("response from %s:%d, seq=%d time=%.2f ms\n", hostname, portnr, curncount, (dend - dstart) * 1000.0);
 
             break;
         }
