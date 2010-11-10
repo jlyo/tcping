@@ -29,7 +29,7 @@ void handler(int sig)
 int main(int argc, char *argv[])
 {
     char *hostname = NULL;
-    int portnr = 80;
+    int portnr = 7;
     int c;
     int count = -1, curncount = 0;
     int wait = 1, quiet = 0;
