@@ -11,45 +11,40 @@
 
 #include "tcp.h"
 
-int connect_to(char *host, char *portnr, struct timeval *rtt)
+int lookup(char *host, char *portnr, struct addrinfo **res)
 {
-    int fd;
     struct addrinfo hints;
-    struct addrinfo *resolved;
-    struct addrinfo *addr;
-    int errcode;
-    struct timeval start;
-    int connect_result;
-
     memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_NUMERICSERV;
     hints.ai_protocol = 0;
 
-    resolved = NULL;
-    if ((errcode = getaddrinfo(host, portnr, &hints, &resolved)) != 0)
-    {
-        fprintf(stderr, "could not resolve %s:%s: %s\n", host, portnr, gai_strerror(errcode));
-        goto connect_to_error;
-    }
+    return getaddrinfo(host, portnr, &hints, res);
+}
+
+int connect_to(struct addrinfo *addr, struct timeval *rtt)
+{
+    int fd;
+    struct timeval start;
+    int connect_result;
+    int errno_save;
 
     /* try to connect for each of the entries: */
-    addr = resolved;
     while (addr != NULL)
     {
         /* create socket */
         fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
         if (fd == -1)
         {
-            perror("problem creating socket ");
-            goto connect_to_error;
+            return -errno;
         }
 
         if (gettimeofday(&start, NULL) == -1)
         {
-            perror("gettimeofday");
-            goto connect_to_error;
+            errno_save = errno;
+            close(fd);
+            return -errno_save;
         }
 
         /* connect to peer */
@@ -58,12 +53,11 @@ int connect_to(char *host, char *portnr, struct timeval *rtt)
         {
             if (gettimeofday(rtt, NULL) == -1)
             {
-                perror("gettimeofday");
-                goto connect_to_error;
+                errno_save = errno;
+                close(fd);
+                return -errno_save;
             }
             close(fd);
-            freeaddrinfo(resolved);
-            resolved = NULL;
             rtt->tv_sec = rtt->tv_sec - start.tv_sec;
             rtt->tv_usec = rtt->tv_usec - start.tv_usec;
             return 0;
@@ -73,11 +67,5 @@ int connect_to(char *host, char *portnr, struct timeval *rtt)
         addr = addr->ai_next;
     }
 
-connect_to_error:
-    if (resolved != NULL)
-    {
-        freeaddrinfo(resolved);
-        resolved = NULL;
-    }
     return -1;
 }

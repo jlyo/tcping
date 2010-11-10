@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
     int wait = 1, quiet = 0;
     int ok = 0, err = 0;
     double min = 999999999999999.0, avg = 0.0, max = 0.0;
+    struct addrinfo *resolved;
+    int errcode;
 
     while((c = getopt(argc, argv, "h:p:c:i:fq?")) != -1)
     {
@@ -75,19 +77,26 @@ int main(int argc, char *argv[])
     }
     hostname = argv[optind];
 
-    if (!quiet)
-        printf("PING %s:%s\n", hostname, portnr);
-
     signal(SIGINT, handler);
     signal(SIGTERM, handler);
+
+    if ((errcode = lookup(hostname, portnr, &resolved)) != 0)
+    {
+        fprintf(stderr, "%s\n", gai_strerror(errcode));
+        return 2;
+    }
+
+    if (!quiet)
+        printf("PING %s:%s\n", hostname, portnr);
 
     while((curncount < count || count == -1) && stop == 0)
     {
         double ms;
         struct timeval rtt;
 
-        if (connect_to(hostname, portnr, &rtt) == -1)
+        if ((errcode = connect_to(resolved, &rtt) != 0))
         {
+            errno = -errcode;
             printf("error connecting to host: %s\n", strerror(errno));
             err++;
         }
@@ -116,6 +125,7 @@ int main(int argc, char *argv[])
         printf("round-trip min/avg/max = %.1f/%.1f/%.1f ms\n", min, avg / (double)ok, max);
     }
 
+    freeaddrinfo(resolved);
     if (ok)
         return 0;
     else
