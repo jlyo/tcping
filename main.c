@@ -96,10 +96,9 @@ int main(int argc, char *argv[])
         double ms;
         struct timeval rtt;
 
-        if ((errcode = connect_to(resolved, &rtt) != 0))
+        if ((errcode = connect_to(resolved, &rtt)) != 0)
         {
-            errno = -errcode;
-            printf("error connecting to host: %s\n", strerror(errno));
+            printf("error connecting to host (%d): %s\n", -errcode, strerror(-errcode));
             err++;
         }
         else
