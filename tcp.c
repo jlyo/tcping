@@ -29,6 +29,7 @@ int connect_to(struct addrinfo *addr, struct timeval *rtt)
     struct timeval start;
     int connect_result;
     int errno_save;
+    const int on = 1;
 
     /* try to connect for each of the entries: */
     while (addr != NULL)
@@ -39,6 +40,13 @@ int connect_to(struct addrinfo *addr, struct timeval *rtt)
         {
             return -errno;
         }
+	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
+	{
+            errno_save = errno;
+            close(fd);
+            errno = errno_save;
+            return -errno;
+	}
 
         if (gettimeofday(&start, NULL) == -1)
         {
