@@ -44,7 +44,8 @@ int connect_to(struct addrinfo *addr, struct timeval *rtt)
         {
             errno_save = errno;
             close(fd);
-            return -errno_save;
+            errno = errno_save;
+            return -errno;
         }
 
         /* connect to peer */
@@ -57,15 +58,19 @@ int connect_to(struct addrinfo *addr, struct timeval *rtt)
                 close(fd);
                 return -errno_save;
             }
-            close(fd);
+	    errno_save = errno;
+	    close(fd);
+	    errno = errno_save;
             rtt->tv_sec = rtt->tv_sec - start.tv_sec;
             rtt->tv_usec = rtt->tv_usec - start.tv_usec;
             return 0;
         }
 
+	errno_save = errno;
         close(fd);
+	errno = errno_save;
         addr = addr->ai_next;
     }
 
-    return -1;
+    return errno ? -errno : -1;
 }
