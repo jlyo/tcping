@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "tcp.h"
 
@@ -28,57 +29,44 @@ int connect_to(struct addrinfo *addr, struct timeval *rtt)
     int fd;
     struct timeval start;
     int connect_result;
-    int errno_save;
     const int on = 1;
+    /* int flags; */
+    int rv = 0;
 
     /* try to connect for each of the entries: */
     while (addr != NULL)
     {
         /* create socket */
-        fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-        if (fd == -1)
-        {
-            return -errno;
-        }
-	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
-	{
-            errno_save = errno;
-            close(fd);
-            errno = errno_save;
-            return -errno;
-	}
-
+        if ((fd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol)) == -1)
+            goto next_addr0;
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
+            goto next_addr1;
+#if 0
+        if ((flags = fcntl(fd, F_GETFL, 0)) == -1)
+            goto next_addr1;
+        if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+            goto next_addr1;
+#endif
         if (gettimeofday(&start, NULL) == -1)
-        {
-            errno_save = errno;
-            close(fd);
-            errno = errno_save;
-            return -errno;
-        }
+            goto next_addr1;
 
         /* connect to peer */
-        connect_result = connect(fd, addr->ai_addr, addr->ai_addrlen);
-        if ((connect_result == 0) || (errno == ECONNREFUSED))
+        if ((connect_result = connect(fd, addr->ai_addr, addr->ai_addrlen)) == 0)
         {
             if (gettimeofday(rtt, NULL) == -1)
-            {
-                errno_save = errno;
-                close(fd);
-                return -errno_save;
-            }
-	    errno_save = errno;
-	    close(fd);
-	    errno = errno_save;
+                goto next_addr1;
             rtt->tv_sec = rtt->tv_sec - start.tv_sec;
             rtt->tv_usec = rtt->tv_usec - start.tv_usec;
+            close(fd);
             return 0;
         }
 
-	errno_save = errno;
+next_addr1:
         close(fd);
-	errno = errno_save;
+next_addr0:
         addr = addr->ai_next;
     }
 
-    return errno ? -errno : -1;
+    rv = rv ? rv : -errno;
+    return rv;
 }
