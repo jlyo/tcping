@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     double min = 999999999999999.0, avg = 0.0, max = 0.0;
     struct addrinfo *resolved;
     int errcode;
+    int seen_addrnotavail;
 
     while((c = getopt(argc, argv, "h:p:c:i:fq?")) != -1)
     {
@@ -98,11 +99,28 @@ int main(int argc, char *argv[])
 
         if ((errcode = connect_to(resolved, &rtt)) != 0)
         {
-            printf("error connecting to host (%d): %s\n", -errcode, strerror(-errcode));
-            err++;
+            if (errcode != -EADDRNOTAVAIL)
+            {
+                printf("error connecting to host (%d): %s\n", -errcode, strerror(-errcode));
+                err++;
+            }
+            else
+            {
+                if (seen_addrnotavail)
+                {
+                    printf(".");
+                    fflush(stdout);
+                }
+                else
+                {
+                    printf("error connecting to host (%d): %s\n", -errcode, strerror(-errcode));
+                }
+                seen_addrnotavail = 1;
+            }
         }
         else
         {
+            seen_addrnotavail = 0;
             ok++;
 
             ms = ((double)rtt.tv_sec * 1000.0) + ((double)rtt.tv_usec / 1000.0);
@@ -111,6 +129,7 @@ int main(int argc, char *argv[])
             max = max < ms ? ms : max;
 
             printf("response from %s:%s, seq=%d time=%.2f ms\n", hostname, portnr, curncount, ms);
+            if (ms > 500) break; /* Stop the test on the first long connect() */
         }
 
         curncount++;
