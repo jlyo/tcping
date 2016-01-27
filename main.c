@@ -16,7 +16,7 @@ void usage(void)
 {
     fprintf(stderr, "tcping, (C) 2003 folkert@vanheusden.com\n\n");
     fprintf(stderr, "hostname	hostname (e.g. localhost)\n");
-    fprintf(stderr, "-p portnr	portnumber (e.g. 80)\n");
+    fprintf(stderr, "portnr		portnumber (e.g. 80)\n");
     fprintf(stderr, "-c count	how many times to connect\n");
     fprintf(stderr, "-i interval	delay between each connect\n");
     fprintf(stderr, "-f		flood connect (no delays)\n");
@@ -31,7 +31,7 @@ void handler(int sig)
 int main(int argc, char *argv[])
 {
     char *hostname = NULL;
-    char *portnr = "7";
+    char *portnr = "80";
     int c;
     int count = -1, curncount = 0;
     int wait = 1, quiet = 0;
@@ -41,13 +41,10 @@ int main(int argc, char *argv[])
     int errcode;
     int seen_addrnotavail;
 
-    while((c = getopt(argc, argv, "h:p:c:i:fq?")) != -1)
+    while((c = getopt(argc, argv, "h:c:i:fq?")) != -1)
     {
         switch(c)
         {
-            case 'p':
-                portnr = optarg;
-                break;
 
             case 'c':
                 count = atoi(optarg);
@@ -79,6 +76,7 @@ int main(int argc, char *argv[])
         return 3;
     }
     hostname = argv[optind];
+    portnr = argv[optind+1];
 
     signal(SIGINT, handler);
     signal(SIGTERM, handler);
