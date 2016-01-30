@@ -1,4 +1,4 @@
-CC=gcc
+CC=gcc -ggdb
 
 LDFLAGS=
 CFLAGS=-g -Wall -Wextra -pedantic

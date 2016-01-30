@@ -5,7 +5,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
-
+#include <arpa/inet.h>
 #include "tcp.h"
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
@@ -20,7 +20,8 @@ void usage(void)
     fprintf(stderr, "-c count	how many times to connect\n");
     fprintf(stderr, "-i interval	delay between each connect\n");
     fprintf(stderr, "-f		flood connect (no delays)\n");
-    fprintf(stderr, "-q		quiet, only returncode\n\n");
+    fprintf(stderr, "-q		quiet, only returncode\n");
+    fprintf(stderr, "[-p(4|6)]	prever ipv4/ipv6\n\n");
 }
 
 void handler(int sig)
@@ -40,8 +41,16 @@ int main(int argc, char *argv[])
     struct addrinfo *resolved;
     int errcode;
     int seen_addrnotavail;
+    struct addrinfo hints;
 
-    while((c = getopt(argc, argv, "h:c:i:fq?")) != -1)
+    memset(&hints, 0, sizeof(struct addrinfo));
+    
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_NUMERICSERV;
+    hints.ai_protocol = 0;
+
+    while((c = getopt(argc, argv, "p:h:c:i:fq?")) != -1)
     {
         switch(c)
         {
@@ -62,6 +71,14 @@ int main(int argc, char *argv[])
                 quiet = 1;
                 break;
 
+            case 'p':
+                 if(strcmp(optarg, "4") ){
+                      hints.ai_family = AF_INET6;
+                }
+                else if(strcmp(optarg, "6")){
+                     hints.ai_family = AF_INET;
+                }
+                break;
             case '?':
             default:
                 usage();
@@ -81,14 +98,26 @@ int main(int argc, char *argv[])
     signal(SIGINT, handler);
     signal(SIGTERM, handler);
 
-    if ((errcode = lookup(hostname, portnr, &resolved)) != 0)
+    if ((errcode = getaddrinfo(hostname, portnr, &hints, &resolved)) != 0)
     {
         fprintf(stderr, "%s\n", gai_strerror(errcode));
         return 2;
     }
+    char address[2+INET6_ADDRSTRLEN];
+    if( resolved->ai_addr->sa_family == AF_INET6 ) {
+        address[0]='[';
+        struct sockaddr_in6 *addr;
+        addr = (struct sockaddr_in6 *)resolved->ai_addr; 
+        inet_ntop(AF_INET6, &(addr->sin6_addr), address+1, INET6_ADDRSTRLEN);
+        address[strlen(address)]=']';
+    }else{
+        struct sockaddr_in *addr;
+        addr = (struct sockaddr_in *)resolved->ai_addr; 
+        inet_ntop(AF_INET, &(addr->sin_addr), address, INET_ADDRSTRLEN);
+    }
 
     if (!quiet)
-        printf("PING %s:%s\n", hostname, portnr);
+        printf("PING %s (%s):%s\n", hostname, address, portnr);
 
     while((curncount < count || count == -1) && stop == 0)
     {
@@ -126,8 +155,8 @@ int main(int argc, char *argv[])
             min = min > ms ? ms : min;
             max = max < ms ? ms : max;
 
-            printf("response from %s:%s, seq=%d time=%.2f ms\n", hostname, portnr, curncount, ms);
-            if (ms > 500) break; /* Stop the test on the first long connect() */
+            printf("response from %s:%s, seq=%d time=%.2f ms\n", address, portnr, curncount, ms);
+            if (ms > 5000) break; /* Stop the test on the first long connect() */
         }
 
         curncount++;
@@ -138,7 +167,7 @@ int main(int argc, char *argv[])
 
     if (!quiet)
     {
-        printf("--- %s:%s ping statistics ---\n", hostname, portnr);
+        printf("--- %s:%s ping statistics ---\n", address, portnr);
         printf("%d responses, %d ok, %3.2f%% failed\n", curncount, ok, (((double)err) / abs(((double)count)) * 100.0));
         printf("round-trip min/avg/max = %.1f/%.1f/%.1f ms\n", min, avg / (double)ok, max);
     }
